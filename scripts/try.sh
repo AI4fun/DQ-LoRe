@@ -50,7 +50,7 @@ do
   retrieve_file=${run_dir}/train_retrieved.json
 
 
-
+  retrieve_file=${run_dir}/qa_train_retrieved.json
   pred_file=${run_dir}/pred.json
   accelerate launch --num_processes ${gpu} --main_process_port ${port}  qa_inferencer.py \
       hydra.run.dir=${run_dir}/inferencer \
@@ -62,6 +62,7 @@ do
       model_name=${model_name} \
       dataset_reader.dataset_split=test \
       batch_size=${inf_batch_size}
+      retrieve_file=${retrieve_file}
 done
 
 
