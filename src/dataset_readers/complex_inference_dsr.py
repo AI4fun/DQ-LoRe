@@ -22,8 +22,6 @@ class InferenceDatasetReader(BaseDatasetReader):
         if 'ctxs' in entry:
             ctx = [self.index_reader[i] for i in entry['ctxs']]
             
-            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ complex_inference_dsr ctx[0]:{}".format(ctx[0]))
-            assert 1==0
             
             ice_prompts_list = [i['metadata']['text'] for i in ctx]
             ice_lengths_list = [i['metadata']['len'] for i in ctx]
