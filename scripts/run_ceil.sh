@@ -1,9 +1,9 @@
 #!/bin/bash
 export WANDB_PROJECT=ICL  # change if needed
-export WANDB_ENTITY=menik1126  # change to your wandb account
-export WANDB_API_KEY=3bd0b343db6cd5b3fde2bd2b4eeb68a95793c531  # change to your api-key
+export WANDB_ENTITY=Your WANDB name  # change to your wandb account
+export WANDB_API_KEY=Your API key  # change to your api-key
 export WANDB_START_METHOD=thread
-export TOKENIZERS_PARALLELISM=false
+export TOKENIZERS_PARALLELISM=True
 export HYDRA_FULL_ERROR=1
 
 gpu=8
