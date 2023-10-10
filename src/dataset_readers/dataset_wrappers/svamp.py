@@ -39,7 +39,6 @@ def get_qa(entry):
 
 @field_getter.add("gen_a")
 def get_gen_a(entry):
-    #return "{ice_prompt}{question}, You need to output a json format where the thought tag is the reasoning process and the result tag is the final result, which is represented only by numbers\t".format(ice_prompt="{ice_prompt}", question=get_q(entry))
     return "{ice_prompt}{question}\t".format(ice_prompt="{ice_prompt}", question=get_q(entry))
 
 @field_getter.add("complex_qa")
@@ -50,7 +49,6 @@ def get_complex_qa(entry):
     replacement = r"The answer is \1"
     new_ans = re.sub(pattern, replacement, ans)
     return "{question}\n{answer}".format(question = get_q(entry), answer = new_ans)
-    #return "Question:{question}\n Answer:{answer}".format(question = get_q(entry), answer = get_a(entry))
     
 @field_getter.add("number_qa")
 def get_number_qa(entry):
@@ -59,16 +57,13 @@ def get_number_qa(entry):
     pattern = r"####\s*(-?\d+)"
     replacement = r"The answer is \1"
     new_ans = re.sub(pattern, replacement, ans)
-    #return "Question:{question}\n{answer}".format(question = get_q(entry), answer = add_numbering(new_ans))
     return "{question}\nA: Let's think step by step.\n{answer}".format(question = get_q(entry), answer = add_numbering(new_ans))
-    #return "Question:{question}\n Answer:{answer}".format(question = get_q(entry), answer = get_a(entry))
 
 class DatasetWrapper(ABC):
     name = "svamp"
     ice_separator = "\n"
     question_field = "question"
     answer_field = "answer"
-    #hf_dataset = "ChilleD/SVAMP"
-    hf_dataset = "/home/xiongj/icl/svamp/index_data/svamp/svamp"
-    #hf_dataset_name = "main"
+    hf_dataset = "ChilleD/SVAMP"
+    hf_dataset_name = "main"
     field_getter = field_getter
