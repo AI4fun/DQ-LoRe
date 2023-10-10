@@ -1,14 +1,12 @@
 #!/bin/bash
 export WANDB_PROJECT=ICL  # change if needed
-export WANDB_ENTITY=lizx2333  # change to your wandb account
-export WANDB_API_KEY=209d2c11abb1119afd7b6e1fc4271b1d52f2918c  # change to your api-key
+export WANDB_ENTITY=Your WANDB name  # change to your wandb account
+export WANDB_API_KEY=Your API key  # change to your api-key
 export WANDB_START_METHOD=thread
 export TOKENIZERS_PARALLELISM=True
 export HYDRA_FULL_ERROR=1
 
 export CUDA_VISIBLE_DEVICES="0"
-#export CUDA_VISIBLE_DEVICES="0,1,2,3"
-#export CUDA_VISIBLE_DEVICES="4,5,6,7"
 
 gpu=1
 method=epr
