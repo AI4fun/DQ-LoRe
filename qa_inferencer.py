@@ -60,10 +60,8 @@ class Inferencer:
         self.generation_kwargs = OmegaConf.to_object(cfg.model_config.generation_kwargs)
         self.evaluator = get_metric(cfg.task_name)
         
-        
+
         self.qa_dataset_reader = hu.instantiate(cfg.qa_dataset_reader)
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!! cfg.qa_dataset_reader):{}".format(cfg.qa_dataset_reader))
-        print("!!!!!!!!!!!!!!!!!!!!! self.cuda_device:{}".format(self.cuda_device))
         qa_co = DataCollatorWithPaddingAndCuda(tokenizer=self.qa_dataset_reader.tokenizer, device=self.cuda_device)
         self.qa_dataloader = DataLoader(self.qa_dataset_reader, batch_size=cfg.batch_size, collate_fn=qa_co)
         self.num_candidates = 1
@@ -72,10 +70,9 @@ class Inferencer:
         
         
         qa_model_config = hu.instantiate(cfg.qa_model_config)
-        #self.qa_model = BiEncoder.from_pretrained('/home/xiongj/icl-ceil_api/output/epr/gsm8k/EleutherAI/gpt-neo-2.7B/bert-fix_ctx-shared-bs64/checkpoint-2500', config=qa_model_config)
-        #self.qa_model = BiEncoder.from_pretrained('/home/xiongj/model/aqua_iid_chekpoint-1000/checkpoint-1000/', config=qa_model_config)
+        self.pretrained_qa_model = cfg.pretrained_model
         
-        self.qa_model = BiEncoder.from_pretrained('/home/xiongj/icl/aqua/output/epr/aqua/EleutherAI/gpt-neo-2.7B/bert-fix_ctx-shared-bs64/qa_model', config=qa_model_config)
+        self.qa_model = BiEncoder.from_pretrained(self.pretrained_qa_model, config=qa_model_config)
         self.qa_model = self.qa_model.to(self.cuda_device)
         self.qa_model.eval()
         
@@ -87,6 +84,8 @@ class Inferencer:
         self.qa_index_reader = qa_index_reader
     
         self.model, self.dataloader = self.init_model_dataloader(cfg)
+
+        self.pca_num = cfg.pca_num
         
         
 
@@ -209,97 +208,33 @@ class APInferencer(Inferencer):
         return index
 
     def forward(self):
-        
-        prompts = [entry['metadata']['prompt'] for entry in self.dataloader]
-        if 'choices' in self.dataset_reader.dataset_wrapper.field_getter:
-            choices = [self.dataset_reader.dataset_wrapper.get_field(entry['metadata'], 'choices')
-                       for entry in self.dataloader]
-            args_list = list(zip(prompts, choices))
-        else:
-            args_list = prompts
-        logger.info(str(prompts[0]))
-        
-        
-        #args_list = args_list[:5]
-        
-        
-        responses = parallel_run(run_api, args_list=args_list,
-                                 n_processes=16,
-                                 client=self.model,
-                                 **self.generation_kwargs)
-        
-        #with open('./svamp.responses.txt', "w") as f:
-        #    json.dump(responses, f)
-
-        print("==================APInferencer responses:{}".format(responses))
-        first_data = []
-        
-        for i, (entry, response) in enumerate(zip(self.dataloader, responses)):
-            #if i>=10:
-            #    break
-            #if i == 0:
-            #    logger.info(prompts[i])
-            #    logger.info('\n***\n'.join([str(i) for i in response][:3]))
-            entry['metadata']['generated'] = response[0]['text']
-            first_data.append(entry['metadata'])
-        
-        first_preds = [i['generated'] for i in first_data]
-        first_metric = self.evaluator.evaluate(first_preds, first_data)
-        logger.info(f"first_metric: {str(first_metric)}")
-        
-        '''
-        
-        with open('aqua_complexcot0.44.json', 'r', encoding='latin-1') as file:
-        #with open('svamp.responses0.753.txt', 'r', encoding='latin-1') as file:
-            
+        responses_file = "Your responses file"
+        with open(responses_file, 'r', encoding='latin-1') as file:         
             content = file.read()
         responses = eval(content)
         
         
-        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ aqua_complexcot0.44.json read responses!")
+        print(f"{responses_file} read responses!")
         
         
         
-        res_iterator = iter(responses)   # die dai qi, yong yu yici qu liangge zhi
-        
-        
-        # huo qu hui da de encode                         
+        res_iterator = iter(responses) 
+                            
         qa_res_list = []
-        qa_tokenizer = BertTokenizer.from_pretrained('output/epr/gsm8k/EleutherAI/gpt-neo-2.7B/bert-fix_ctx-shared-bs64/qa_model')
-        #qa_tokenizer = AutoTokenizer.from_pretrained('/home/xiongj/bert-base-uncased')
-        #qa_tokenizer = qa_tokenizer.to(self.cuda_device)
+        qa_tokenizer = BertTokenizer.from_pretrained(self.pretrained_qa_model)
         for i, (entry, response0, response1) in enumerate(zip(self.qa_dataloader, res_iterator, res_iterator)):
             with torch.no_grad():
                 metadata = entry.pop("metadata")
                 ans0 = response0[0]['text']
                 ans1 = response1[0]['text']
 
-                #ans0 = re.sub(r'(The answer is )(.*)$', r'#### \2', ans0)
-                #ans1 = re.sub(r'(The answer is )(.*)$', r'#### \2', ans1)
-                
-                ans0 = re.sub(r"\nLet's think step by step\n", "", ans0)
-                ans1 = re.sub(r"\nLet's think step by step\n", "", ans1) 
-
-                ans0 = re.sub(r"\n A: Let's think step by step.\n", "", ans0)
-                ans1 = re.sub(r"\n A: Let's think step by step.\n", "", ans1)
+                ans0 = re.sub(r"\nA: Let's think step by step.\n", "", ans0)
+                ans1 = re.sub(r"\nA: Let's think step by step.\n", "", ans1)
                 
                 metadata[0]['answer'] = ans0
                 metadata[1]['answer'] = ans1
-                #print("!!!!!!!!!!!!! response0:{}".format(response0))
-                #print("!!!!!!!!!!!!! response1:{}".format(response1))
-                #print("!!!!!!!!!!!!! metadata:{}".format(metadata))
-                #print("!!!!!!!!!!!!! entry:{}".format(entry))
-                #print("!!!!!!!!!!!!! **entry:{}".format(**entry))
-                #print("!!!!!!!!!!!!! response:{}".format(response))
                 qa_text_0 = metadata[0]['text'] + ans0
-                #print("!!!!!!!!!!!!!!!!!!!!! qa_text:{}".format(qa_text))
                 qa_text_1 = metadata[1]['text'] + ans1
-                #qa_text = [[qa_text_0], [qa_text_1]]      # zhe li you dian chou
-                
-                #qa_res = qa_tokenizer.encode_plus(qa_text,truncation=False, add_special_tokens=False,
-                #                                      return_tensors='pt')
-                #print("!!!!!!!!!!!!!!!!!!!!! qa_res:{}".format(qa_res))
-                
                 qa_tokenized_inputs_0 = qa_tokenizer.encode_plus(qa_text_0, truncation=True, add_special_tokens=False, return_tensors='pt', padding=True, max_length=512)
                 qa_tokenized_inputs_1 = qa_tokenizer.encode_plus(qa_text_1, truncation=True, add_special_tokens=False, return_tensors='pt', padding=True, max_length=512)
                 
@@ -319,48 +254,16 @@ class APInferencer(Inferencer):
                 
                 qa_inputs_ids = torch.cat((padded_input_ids1.unsqueeze(0), padded_input_ids2.unsqueeze(0)), dim=0).to(self.cuda_device)
                 qa_attention_mask = torch.cat((padded_input_att1.unsqueeze(0), padded_input_att2.unsqueeze(0)), dim=0).to(self.cuda_device)
-                
-                #print("!!!!!!!!!!!!!!! qa_inputs_ids{}".format(qa_inputs_ids))
-                #print("!!!!!!!!!!!!!!! qa_attention_mask{}".format(qa_attention_mask))
-
-                
-                #encoded_inputs = qa_tokenizer.encode_plus(qa_text_0, qa_text_1, padding="max_length", truncation=True, return_tensors="pt")
-                #input_ids = encoded_inputs['input_ids']
-                #attention_mask = encoded_inputs['attention_mask']
-                #print("!!!!!!!!!!!!! input_ids:{}".format(input_ids))
-                #print("!!!!!!!!!!!!! attention_mask:{}".format(attention_mask))
-                #print("!!!!!!!!!!!!! len(input_ids[0]):{}".format(len(input_ids[0])))
-                #qa_inputs_ids = torch.cat([input_ids[0], input_ids[1]], dim=1)
-                
-                #print("!!!!!!!!!!!!! qa_inputs_ids".format(qa_inputs_ids))
-                #qa_tokenized_inputs_0 = encoded_inputs["input_ids"][:, :max_length]
-                #qa_tokenized_inputs_1 = encoded_inputs["input_ids"][:, max_length:2*max_length]
-                #print("!!!!!!!!!!!!! qa_tokenized_inputs_0:{}".format(qa_tokenized_inputs_0))
-                #print("!!!!!!!!!!!!! qa_tokenized_inputs_1:{}".format(qa_tokenized_inputs_1))
-                #qa_tokenized_inputs = qa_tokenizer.encode_plus(qa_text, truncation=False, add_special_tokens=False, return_tensors='pt')
-                #qa_inputs_ids = torch.cat([qa_tokenized_inputs_0.input_ids.unsqueeze(1), qa_tokenized_inputs_1.input_ids.unsqueeze(1)], dim=1)
-                #qa_attention_mask = torch.cat([qa_tokenized_inputs_0.attention_mask.unsqueeze(1), qa_tokenized_inputs_1.attention_mask.unsqueeze(1)], dim=1)
-                #print("!!!!!!!!!!!!! qa_text:{}".format(qa_text))
-                #print("!!!!!!!!!!!!! qa_tokenized_inputs:{}".format(qa_tokenized_inputs))
-                #qa_entry = {'input_ids': qa_tokenized_inputs.input_ids[0], 'attention_mask': qa_tokenized_inputs.attention_mask[0]}
                 qa_entry = {'input_ids': qa_inputs_ids, 'attention_mask': qa_attention_mask}
-                #print("!!!!!!!!!!!!!!!!!!!!! qa_entry['input_ids'].shape:{}".format(qa_entry['input_ids'].shape))
-                #print("!!!!!!!!!!!!!!!!!!!!! qa_entry['attention_mask'].shape:{}".format(qa_entry['attention_mask'].shape))
                 qa_res = self.qa_model.encode(**qa_entry, **{})
             qa_res = qa_res.cpu().detach().numpy()
-            #qa_res = qa_res['input_ids'].numpy()
-            #print("!!!!!!!!!!!!!!!!!!!!! numpy() qa_res:{}".format(qa_res))
-            #print("!!!!!!!!!!!!!!!!!!!!! numpy() metadata:{}".format(metadata))
             qa_res_list.extend([{"embed": r, "metadata": m} for r, m in zip(qa_res, metadata)])
             
             
         for res in qa_res_list:
-            #print("################# res:{}".format(res))
-            res['entry'] = self.qa_dataset_reader.dataset_wrapper[res['metadata']['id']]     ### zhe yi bu keneng you wenti
-            #print("################# after res:{}".format(res))
+            res['entry'] = self.qa_dataset_reader.dataset_wrapper[res['metadata']['id']]
         
-        func = partial(pca, num_candidates=self.num_candidates, num_ice=self.num_ice, index_reader = self.qa_index_reader, model = self.qa_model, device = self.cuda_device)
-        #func = partial(knn, num_candidates=self.num_candidates, num_ice=self.num_ice)
+        func = partial(pca, num_candidates=self.num_candidates, num_ice=self.num_ice, index_reader = self.qa_index_reader, model = self.qa_model, device = self.cuda_device, pca_num = self.pca_num)
         qa_data = parallel_run(func=func, args_list=qa_res_list, initializer=set_global_object,
                             initargs=(self.qa_index, self.is_train))
         with open(self.cfg.retrieved_path, "w") as f:
@@ -382,11 +285,6 @@ class APInferencer(Inferencer):
         data = []
         
         for i, (entry, response) in enumerate(zip(retrieved_dataloader, responses)):
-            #if i>=10:
-            #    break
-            #if i == 0:
-            #    logger.info(prompts[i])
-            #    logger.info('\n***\n'.join([str(i) for i in response][:3]))
             entry['metadata']['generated'] = response[0]['text']
             data.append(entry['metadata'])
 
@@ -397,7 +295,7 @@ class APInferencer(Inferencer):
         preds = [i['generated'] for i in data]
         metric = self.evaluator.evaluate(preds, data)
         logger.info(f"metric: {str(metric)}")
-        '''
+        
 
 
 
@@ -405,7 +303,6 @@ class APInferencer(Inferencer):
 
 
 def PCA_svd(X, k, center=True, device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")):
-    #print("###### device:", device)
     n = X.size()[0]
     ones = torch.ones(n).view([n,1])
     h = ((1/n) * torch.mm(ones, ones.t())) if center  else torch.zeros(n*n).view([n,n])
@@ -416,26 +313,15 @@ def PCA_svd(X, k, center=True, device = torch.device("cuda:0" if torch.cuda.is_a
     X_center =  torch.mm(H.double(), X.double())
     u, s, v = torch.svd(X_center)
     components  = v[:k].t()
-    #explained_variance = torch.mul(s[:k], s[:k])/(n-1)
     return components
 
-def pca(entry, index_reader, model, device, num_candidates=1, num_ice=1):
-    #print("type(entry['embed'])",type(entry['embed']))
-    #embed = np.expand_dims(PCA_svd(entry['embed'], 256), axis=0)
-    #embed = PCA_svd(entry['embed'], 256)
+def pca(entry, index_reader, model, device, num_candidates=1, num_ice=1, pca_num=128):
     embed = np.expand_dims(entry['embed'], axis=0)
     near_ids = index_global.search(embed, 16)[1][0].tolist()
     near_ids = near_ids[1:] if is_train_global else near_ids
 
     entry_embed = torch.tensor(entry['embed']).to(device)
     pca_index = faiss.IndexIDMap(faiss.IndexFlatIP(pca_num))
-    #print(f"entry_embed:{entry_embed}")
-    #print(f"entry_embed.shape:{entry_embed.shape}")
-    #pca_embed = PCA_svd(entry_embed, 256, device = device).to(torch.float32)
-    #print(f"embed:{embed}")
-    #print(f"embed.shape:{embed.shape}")
-    #print(f"pca_embed:{pca_embed}")
-    #print(f"pca_embed.shape:{pca_embed.shape}")
 
     pca_embed_list = [entry_embed]
 
@@ -447,54 +333,24 @@ def pca(entry, index_reader, model, device, num_candidates=1, num_ice=1):
 
         input_ids = torch.tensor([input_id1, input_id2]).to(device)
         attention_mask = torch.tensor([attention_mask1, attention_mask2]).to(device)
-        #print("{'input_ids':input_ids, 'attention_mask':attention_mask}:", {'input_ids':input_ids, 'attention_mask':attention_mask})
-        #print(f"input_ids:{input_ids}, attention_mask:{attention_mask}")    
+
         new_embed = model.encode(**{'input_ids':input_ids, 'attention_mask':attention_mask}, encode_ctx=True)
         new_embed = new_embed.to(device)
-        #print(f"new_embed.device:{new_embed.device}")
 
-        #new_embed = new_embed.cpu().detach().numpy()
         for n in new_embed:
             pca_embed_list.append(n)
-        
-        #new_pca_embed = PCA_svd(new_embed, 256, device = device).to(torch.float32)
-        #new_pca_embed = new_pca_embed.cpu().detach().numpy()
-        #for n in new_pca_embed:
-        #   pca_embed_list.append(n)
-        #print("######## pca_emed_list:", pca_embed_list)
-        #print("########## new_embed:", new_embed)
-        #print("########## new_embed.shape:", new_embed.shape)
 
     pca_embed_list = torch.stack(pca_embed_list)
-    #print(f"#### pca_embed_list:{pca_embed_list}")
-    #print(f"#### pca_embed_list.shape:{pca_embed_list.shape}")
     pca_embed_list = PCA_svd(pca_embed_list, pca_num, device = device).to(torch.float32)
     pca_embed_list = pca_embed_list.cpu().detach().numpy()
     id_list = np.array(near_ids)
     embed_list = np.stack([emb for emb in pca_embed_list[1:]])
-    #print("###### id_list:",id_list)
-    #print("###### embed_list:",embed_list)
-    #print("###### pca_embed_list:",pca_embed_list)
-    #print("###### pca_embed_list.shape:",pca_embed_list.shape)
-    #assert 1==0
     pca_index.add_with_ids(embed_list, id_list)
-
-    #print(f"pca_embed_list[0]:{pca_embed_list[0]}")
     pca_embed = np.expand_dims(pca_embed_list[0], axis=0)
-    #print(f"pca_embed:{pca_embed}")
     pca_ids = pca_index.search(pca_embed, num_ice)[1][0].tolist()
-
-
-
-
-
-
-
     entry = entry['entry']
     entry['ctxs'] = pca_ids
-
     entry['ctxs_candidates'] = [[i] for i in pca_ids[:num_candidates]]
-
     return entry
 
 def extend_array_with_zeros(arr, target_length):
