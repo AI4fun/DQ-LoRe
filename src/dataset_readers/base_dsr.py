@@ -11,8 +11,6 @@ def _encode_field(example, idx, **kwargs):
     tokenizer = kwargs['tokenizer']
     truncation = kwargs['truncation']
     text = field_getter(example)
-    #print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ text:{}".format(text))
-    #text = text + "You need to output a json format where the thought tag is the reasoning process and the result tag is the final result, which is represented only by numbers."
     tokenized_inputs = tokenizer.encode_plus(text, truncation=truncation, return_tensors='pt')
     return {
         'input_ids': tokenized_inputs.input_ids[0],
