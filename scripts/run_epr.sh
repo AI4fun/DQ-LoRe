@@ -45,7 +45,7 @@ do
 
 
   scored_file=${run_dir}/scored.json
-  accelerate launch --num_processes ${gpu} --main_process_port ${port}  scorer.py \
+  accelerate launch --num_processes ${gpu} --main_process_port ${port}  api_scorer.py \
       hydra.run.dir=${run_dir}/scorer \
       task_name=${task_name} \
       output_file=${scored_file} \
