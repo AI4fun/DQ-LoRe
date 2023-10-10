@@ -49,16 +49,14 @@ class BiEncoder(PreTrainedModel):
 
         if config.q_model_name is not None:
             print(f"config.q_model_name:{config.q_model_name}")
-            self.question_model = AutoModel.from_pretrained("/home/xiongj/bert-base-uncased")
-            #self.question_model = AutoModel.from_pretrained(config.q_model_name)
+            self.question_model = AutoModel.from_pretrained(config.q_model_name)
             
         else:
             self.question_model = None
 
         if config.ctx_model_name is not None:
             print(f"config.ctx_model_name:{config.ctx_model_name}")
-            self.ctx_model = AutoModel.from_pretrained("/home/xiongj/bert-base-uncased")
-            #self.ctx_model = AutoModel.from_pretrained(config.ctx_model_name)
+            self.ctx_model = AutoModel.from_pretrained(config.ctx_model_name)
         else:
             self.ctx_model = None
 
