@@ -41,7 +41,6 @@ def get_qa(entry):
 
 @field_getter.add("gen_a")
 def get_gen_a(entry):
-    #return "{ice_prompt}{question}, You need to output a json format where the thought tag is the reasoning process and the result tag is the final result, which is represented only by numbers\t".format(ice_prompt="{ice_prompt}", question=get_q(entry))
     return "{ice_prompt}{question}\t".format(ice_prompt="{ice_prompt}", question=get_q(entry))
 
 @field_getter.add("complex_qa")
@@ -70,6 +69,6 @@ class DatasetWrapper(ABC):
     ice_separator = "\n"
     question_field = "question"
     answer_field = "answer"
-    hf_dataset = "/home/xiongj/icl/aqua/index_data/aqua/aqua"
+    hf_dataset = "Your dataset path"
     #hf_dataset_name = "main"
     field_getter = field_getter
