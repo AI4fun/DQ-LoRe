@@ -69,6 +69,7 @@ do
       training_args.output_dir=${run_dir} \
       training_args.run_name=${run_name} \
       model_config.ctx_model_name=null  # share ctx model with q model
+      pretrained_model=${pretrained_model}
 
 
   retrieve_file=${run_dir}/qa_train_retrieved.json
