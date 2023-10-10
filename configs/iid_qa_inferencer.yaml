@@ -8,7 +8,7 @@ model_name: 'bert-base-uncased'                # the model name of the LM infere
 task_name: ???
 output_file: ???                # predictions will be saved to `output_file`
 
-retrieved_path: 'output/epr/svamp/EleutherAI/gpt-neo-2.7B/bert-fix_ctx-shared-bs64/qa_train_retrieved.json'
+retrieved_path: null
 
 batch_size: 8                  # the batch_size of the model when using `hf-gen_a` model_config; for api models, the batch size is decided based on the number of openai keys.
 
