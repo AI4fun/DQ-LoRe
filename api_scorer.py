@@ -55,9 +55,6 @@ class Scorer(APInferencer):
         
         prompts = [entry['metadata']['prompt'] for entry in dataloader]
         metadata = [entry['metadata'] for entry in dataloader]
-        print("!!!!!!!!!!!!!!! prompts[0]:{}".format(prompts[0]))
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! metadata[0]:{}".format(metadata[0]))
-        #assert 1==0
         responses = parallel_run(run_scorer_api, args_list=prompts,
                                  n_processes=128,
                                  client=self.model,
