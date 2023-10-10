@@ -1,13 +1,13 @@
 #!/bin/bash
 export WANDB_PROJECT=ICL  # change if needed
-export WANDB_ENTITY=lizx2333  # change to your wandb account
-export WANDB_API_KEY=209d2c11abb1119afd7b6e1fc4271b1d52f2918c  # change to your api-key
+export WANDB_ENTITY=Your WANDB name  # change to your wandb account
+export WANDB_API_KEY=Your API key  # change to your api-key
 export WANDB_START_METHOD=thread
 export TOKENIZERS_PARALLELISM=True
 export HYDRA_FULL_ERROR=1
 
-#export CUDA_VISIBLE_DEVICES="1,0,2,3"
-export CUDA_VISIBLE_DEVICES="2,5,6,7"
+export CUDA_VISIBLE_DEVICES="0,1,2,3"
+
 
 gpu=4
 method=epr
@@ -28,8 +28,7 @@ for task_name in svamp
 do
   export WANDB_TAGS="${method},${task_name},${model_name}"
   run_dir=output/${method}/${task_name}/${model_name}
-  #index_data=index_data/${task_name}/length_index_dataset.json
-  index_data=index_data/${task_name}/svamp/train.json
+  index_data=index_data/${task_name}/svamp/train.json  # You can change the index_dataset path
   mkdir -p ${run_dir}
   mkdir -p index_data/${task_name}
 
