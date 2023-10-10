@@ -60,6 +60,7 @@ do
 
   run_name=bert-fix_ctx-shared-bs64
   run_dir=${run_dir}/${run_name}
+  pretrained_model=${run_dir}/qa_model
   accelerate launch  --main_process_port ${port}  qa_retriever_trainer.py \
       hydra.run.dir=${run_dir}/trainer \
       task_name=${task_name} \
@@ -81,6 +82,8 @@ do
       output_file=${pred_file} \
       model_name=${model_name} \
       dataset_reader.dataset_split=test \
-      batch_size=${inf_batch_size}
-      retrieve_file=${retrieve_file}
+      batch_size=${inf_batch_size} \
+      retrieve_file=${retrieve_file} \
+      pretrained_model=${pretrained_model} \
+      pca_num=128
 done
