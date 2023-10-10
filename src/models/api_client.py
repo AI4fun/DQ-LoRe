@@ -7,7 +7,6 @@ import numpy as np
 import logging
 import codecs
 import os
-#openai.organization = "org-6ggl4nNqbgK72WuEADJICSBA"
 
 logger = logging.getLogger(__name__)
 
@@ -24,18 +23,9 @@ class OpenAIClient():
     def call_api(self, prompt: str, engine: str, max_tokens=2000, temperature=1,
                  stop=None, n=None, echo=False):
         result = None
-        #print("=============call api engine:{}".format(engine))
-        #print("=============call api prompt:{}".format(prompt))
-        #print("=============call api max_tokens:{}".format(max_tokens))
-        #print("=============call api n:{}".format(n))
         if temperature == 0:
             n = 1
 
-        #stop = stop.copy()
-        #for i, s in enumerate(stop):
-        #    if '\\' in s:
-        #        # hydra reads \n to \\n, here we decode it back to \n
-        #        stop[i] = codecs.decode(s, 'unicode_escape')
         while result is None:
             try:
                 key = random.choice(self.keys)
