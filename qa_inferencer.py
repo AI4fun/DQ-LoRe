@@ -18,11 +18,8 @@ from src.utils.misc import parallel_run, save_json
 from src.models.model import ppl_generate
 
 
-import json
 import logging
 import faiss
-import hydra
-import hydra.utils as hu
 import numpy as np
 import torch
 import tqdm
@@ -37,14 +34,12 @@ from src.models.biencoder import BiEncoder
 from transformers import BertTokenizer
 from transformers import AutoTokenizer
 
-import json
 import re
 import itertools
 
 logger = logging.getLogger(__name__)
 
 
-pca_num = 128
 
 class Inferencer:
     def __init__(self, cfg, accelerator=None) -> None:
@@ -157,6 +152,8 @@ class Inferencer:
 
         logger.info(f"Average number of in-context examples after truncating is {avg_ice_num / len(res)}")
 
+    
+
     def write_results(self):
         data = []
         for path in glob.glob(f"{self.output_file}tmp_*.bin"):
@@ -207,17 +204,7 @@ class APInferencer(Inferencer):
         #logger.info(f"Saving qa faiss index to {cfg.faiss_index}, size {len(index_reader)}")
         return index
 
-    def forward(self):
-        responses_file = "Your responses file"
-        with open(responses_file, 'r', encoding='latin-1') as file:         
-            content = file.read()
-        responses = eval(content)
-        
-        
-        print(f"{responses_file} read responses!")
-        
-        
-        
+    def get_qa_res_list(self, responses):
         res_iterator = iter(responses) 
                             
         qa_res_list = []
@@ -258,8 +245,18 @@ class APInferencer(Inferencer):
                 qa_res = self.qa_model.encode(**qa_entry, **{})
             qa_res = qa_res.cpu().detach().numpy()
             qa_res_list.extend([{"embed": r, "metadata": m} for r, m in zip(qa_res, metadata)])
-            
-            
+        return qa_res_list
+
+    def forward(self):
+        responses_file = "Your responses file"
+        with open(responses_file, 'r', encoding='latin-1') as file:         
+            content = file.read()
+        responses = eval(content)
+        
+        
+        print(f"{responses_file} read responses!")
+        
+        qa_res_list = get_qa_res_list(responses)
         for res in qa_res_list:
             res['entry'] = self.qa_dataset_reader.dataset_wrapper[res['metadata']['id']]
         
@@ -405,11 +402,6 @@ def mgs(entry, index_reader, model, device, num_candidates=1, num_ice=1):
     mgs_score = []
     combinations = list(itertools.combinations(near_ids, num_ice))
     for comb in combinations:
-        #print("comb:", comb)
-        #ctx = [extend_array_with_zeros(index_reader[i]['input_ids'], 512) for i in comb]
-        #print("################# ctx: ", ctx)
-        #print("################# index_reader[0]", index_reader[0])
-        #print("################# {'input_ids':torch.tensor(index_reader[i]['input_ids']), 'attention_mask':torch.tensor(index_reader[i]['attention_mask'])}", {'input_ids':torch.tensor(index_reader[0]['input_ids']), 'attention_mask':torch.tensor(index_reader[0]['attention_mask'])})
         embeds = []
         for i in range(0, len(comb), 2):
             input_id1 = extend_array_with_zeros(index_reader[comb[i]]['input_ids'], 512)
@@ -425,13 +417,8 @@ def mgs(entry, index_reader, model, device, num_candidates=1, num_ice=1):
             new_list = new_embed.tolist()
             for l in new_list:
                 embeds.append(l)
-        #print("################# embeds", embeds)
-        #assert 1==0
 
         q, norms = modified_gram_schmidt(embeds)
-        #print(f"################# q:{q}")
-        #print(f"q.shape:{q.shape}")
-        #print(f"################# norms:{norms}")
         score = 1
         """ for n in norms:
             score = score * n """
@@ -439,15 +426,10 @@ def mgs(entry, index_reader, model, device, num_candidates=1, num_ice=1):
         score = sorted(norms, reverse=True)[0]
 
         mgs_score.append(score)
-        #for 
-        #assert 1==0
     
     sorted_ids = sorted(enumerate(mgs_score), key=lambda x: x[1], reverse=True)
     sorted_ids = [index for index, _ in sorted_ids]
-    #print("sorted_ids:", sorted_ids)
-    #print("combinations[sorted_ids[0]]:", combinations[sorted_ids[0]])
     ids = list(combinations[sorted_ids[0]])
-    #assert 1==0
     entry = entry['entry']
     entry['ctxs'] = ids
 
@@ -461,19 +443,14 @@ def set_global_object(index, is_train):
     is_train_global = is_train 
         
 def far_knn(entry, num_candidates=1, num_ice=1):
-    embed = np.expand_dims(entry['embed'], axis=0)
-    #near_ids = index_global.search(embed, max(num_candidates, num_ice)+1)[1][0].tolist()
-    #near_ids = near_ids[1:] if is_train_global else near_ids
-    
+    embed = np.expand_dims(entry['embed'], axis=0)   
     near_ids = index_global.search(embed, 7473)[1][0].tolist()
     far_ids = list(reversed(near_ids))
     
     
 
     entry = entry['entry']
-    #entry['ctxs'] = near_ids[:num_ice]
     entry['ctxs'] = far_ids[:num_ice]
-    #entry['ctxs_candidates'] = [[i] for i in near_ids[:num_candidates]]
     entry['ctxs_candidates'] = [[i] for i in far_ids[:num_candidates]]
     return entry
     
@@ -490,27 +467,17 @@ def knn(entry, num_candidates=1, num_ice=1):
     return entry
     
 def lenth_knn(entry, num_candidates=1, num_ice=1):
-    #print("######################### entry:{}".format(entry))
     embed = np.expand_dims(entry['embed'], axis=0)
     near_ids = index_global.search(embed, 16)[1][0].tolist()
     near_ids = near_ids[1:] if is_train_global else near_ids
     
-    answer_len = len(entry['metadata']['answer'].split("\n"))
-    #print("######################### entry['metadata']['answer']:{}".format(entry['metadata']['answer']))
-    #print("######################### answer_len:{}".format(answer_len))
-    
+    answer_len = len(entry['metadata']['answer'].split("\n")) 
     with open('./index_data/gsm8k/length_index_dataset.json', 'r', encoding='latin-1') as file:
         data = json.load(file)
     
-    #print("######################### data[0]['answer']:{}".format(data[0]['answer']))
     lenth = [len(data[i]['answer'].split("\n")) for i in near_ids]    
     len_score = [abs(l - answer_len - 0.3) for l in lenth]
-    print("######################### answer_len:{}, lenth:{}, len_score:{}".format(answer_len, lenth, len_score))
-    #print("######################### len_score:{}".format(len_score))
     sorted_ids = [x for _, x in sorted(zip(len_score, near_ids))]
-    #print("######################### sorted_ids:{}".format(sorted_ids))
-    
-    assert 1==0
     entry = entry['entry']
     entry['ctxs'] = sorted_ids[:num_ice]
 
@@ -519,27 +486,17 @@ def lenth_knn(entry, num_candidates=1, num_ice=1):
     return entry
 
 def sorted_knn(entry, num_candidates=1, num_ice=1):
-    #print("######################### entry:{}".format(entry))
     embed = np.expand_dims(entry['embed'], axis=0)
     near_ids = index_global.search(embed, 16)[1][0].tolist()
     near_ids = near_ids[1:] if is_train_global else near_ids
     
-    answer_len = len(entry['metadata']['answer'].split("\n"))
-    #print("######################### entry['metadata']['answer']:{}".format(entry['metadata']['answer']))
-    #print("######################### answer_len:{}".format(answer_len))
-    
+    answer_len = len(entry['metadata']['answer'].split("\n"))    
     with open('./index_data/gsm8k/index_dataset.json', 'r', encoding='latin-1') as file:
         data = json.load(file)
     
-    #print("######################### data[0]['answer']:{}".format(data[0]['answer']))
     lenth = [len(data[i]['answer'].split("\n")) for i in near_ids]    
     len_score = [abs(l - answer_len - 0.3) for l in lenth]
-    print("######################### answer_len:{}, lenth:{}, len_score:{}".format(answer_len, lenth, len_score))
-    #print("######################### len_score:{}".format(len_score))
     sorted_ids = [x for _, x in sorted(zip(len_score, near_ids))]
-    #print("######################### sorted_ids:{}".format(sorted_ids))
-    
-    assert 1==0
     entry = entry['entry']
     entry['ctxs'] = sorted_ids[:num_ice]
 
@@ -549,27 +506,18 @@ def sorted_knn(entry, num_candidates=1, num_ice=1):
 
 
 def long_knn(entry, num_candidates=1, num_ice=1):
-    #print("######################### entry:{}".format(entry))
     embed = np.expand_dims(entry['embed'], axis=0)
     near_ids = index_global.search(embed, 16)[1][0].tolist()
     near_ids = near_ids[1:] if is_train_global else near_ids
     
     answer_len = len(entry['metadata']['answer'].split("\n"))
-    #print("######################### entry['metadata']['answer']:{}".format(entry['metadata']['answer']))
-    #print("######################### answer_len:{}".format(answer_len))
     
     with open('./index_data/gsm8k/index_dataset.json', 'r', encoding='latin-1') as file:
         data = json.load(file)
     
-    #print("######################### data[0]['answer']:{}".format(data[0]['answer']))
     lenth = [len(data[i]['answer'].split("\n")) for i in near_ids]    
 
-    #print("######################### answer_len:{}, lenth:{}, len_score:{}".format(answer_len, lenth, len_score))
-    #print("######################### len_score:{}".format(len_score))
     sorted_ids = [x for _, x in sorted(zip(lenth, near_ids), reverse=True)]
-    #print("######################### sorted_ids:{}".format(sorted_ids))
-    
-    #assert 1==0
     entry = entry['entry']
     entry['ctxs'] = sorted_ids[:num_ice]
 
