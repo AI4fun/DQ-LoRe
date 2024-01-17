@@ -24,7 +24,6 @@ def remove_brackets_content(text):
 @field_getter.add("q")
 def get_q(entry):
     return "Queston: " + entry['Body'] + entry['Question']
-    #return "Queston: " + entry['question']
 
 
 @field_getter.add("a")
