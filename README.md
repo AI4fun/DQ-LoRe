@@ -27,3 +27,7 @@ pip install -r requirements.txt
 ```shell
 nohup sh script/run_DQ-LoRe.sh > result.out 2>&1 &
 ```
+## If you wish to examine the results obtained using different CoTs, you may employ the following.
+```python
+python prompt_inferencer.py
+```
