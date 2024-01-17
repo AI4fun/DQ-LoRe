@@ -24,7 +24,6 @@ def get_q(entry):
     options = ""
     for op in entry['options']:
         options += op
-    #return "Question: " + entry['question'] + "\nOptions: " + options
     return entry['question'] + "\nOptions: " + options
 
 
@@ -46,22 +45,22 @@ def get_gen_a(entry):
 @field_getter.add("complex_qa")
 def get_complex_qa(entry):
     ans = get_a(entry)
-    #ans = remove_brackets_content(ans)
+    ans = remove_brackets_content(ans)
     pattern = r"####\s*(-?\d+)"
     replacement = r"The answer is \1"
     new_ans = re.sub(pattern, replacement, ans)
     return "Question: {question}\nA: Let's think step by step.\n{answer}".format(question = get_q(entry), answer = new_ans)
-    #return "Question:{question}\n Answer:{answer}".format(question = get_q(entry), answer = get_a(entry))
+
     
 @field_getter.add("number_qa")
 def get_number_qa(entry):
     ans = get_a(entry)
-    #ans = remove_brackets_content(ans)
+    ans = remove_brackets_content(ans)
     pattern = r"####\s*(-?\d+)"
     replacement = r"The answer is \1"
     new_ans = re.sub(pattern, replacement, ans)
     return "Question: {question}\nA: Let's think step by step.\n{answer}".format(question = get_q(entry), answer = add_numbering(new_ans))
-    #return "Question:{question}\n Answer:{answer}".format(question = get_q(entry), answer = get_a(entry))
+
 
 
 class DatasetWrapper(ABC):
