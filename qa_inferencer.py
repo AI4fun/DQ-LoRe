@@ -305,8 +305,6 @@ def PCA_svd(X, k, center=True, device = torch.device("cuda:0" if torch.cuda.is_a
     h = ((1/n) * torch.mm(ones, ones.t())) if center  else torch.zeros(n*n).view([n,n])
     H = torch.eye(n) - h
     H = H.to(device)
-    #print("##### X.device:", X.device)
-    #print("##### H.device:", H.device)
     X_center =  torch.mm(H.double(), X.double())
     u, s, v = torch.svd(X_center)
     components  = v[:k].t()
@@ -357,21 +355,7 @@ def extend_array_with_zeros(arr, target_length):
     extended_arr = arr + [0] * (target_length - len(arr))
     return extended_arr
 
-""" def modified_gram_schmidt(A):
-    A = np.array(A)
-    m, n = A.shape
-    Q = np.zeros((m, n), dtype=A.dtype)
-    R = np.zeros((n, n), dtype=A.dtype)
-    
-    for j in range(n):
-        v = A[:, j]
-        for i in range(j):
-            R[i, j] = np.dot(Q[:, i].conjugate(), A[:, j])
-            v -= R[i, j] * Q[:, i]
-        R[j, j] = np.linalg.norm(v)
-        Q[:, j] = v / R[j, j]
-    
-    return Q, R """
+
 
 def modified_gram_schmidt(vectors):
     vectors = np.array(vectors, dtype=np.float64)  # 将整型列表转换为NumPy数组，并指定数据类型为float64
@@ -420,8 +404,7 @@ def mgs(entry, index_reader, model, device, num_candidates=1, num_ice=1):
 
         q, norms = modified_gram_schmidt(embeds)
         score = 1
-        """ for n in norms:
-            score = score * n """
+
         
         score = sorted(norms, reverse=True)[0]
 
