@@ -45,16 +45,15 @@ class OpenAIClient():
                 result = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo-16k",
                     api_key=key,
-                    max_tokens=3000,
-                    temperature=0.7,
-                    n=8,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    n=n,
                     messages=[
                     {"role": "user", "content": prompt}
                     ]
                 )
                 '''
                 time.sleep(5)
-                print("=============call api result:{}".format(result))
                 return result
             except Exception as e:
                 logger.info(f"{str(e)}, 'Retry.")
