@@ -24,15 +24,12 @@ class RetrieverTrainer:
         self.training_args = hu.instantiate(cfg.training_args)
         
         
-        # qa yao gai zhe li  !!!!!!!
-        #self.dataset_reader = hu.instantiate(cfg.qa_dataset_reader)
+
         self.dataset_reader = hu.instantiate(cfg.dataset_reader)
         
         
-        print("###################### RetrieverTrainer cfg.dataset_reader".format(cfg.dataset_reader))
         self.index_reader = hu.instantiate(cfg.index_reader)
         encoded_index = list(self.index_reader)
-        print("###################### RetrieverTrainer encoded_index".format(encoded_index))
 
         train_dataset, eval_dataset = self.dataset_reader.split_dataset(test_size=0.1, seed=42)
         logger.info(f"train size: {len(train_dataset)}, eval size: {len(eval_dataset)}")
@@ -79,7 +76,6 @@ def main(cfg):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if cfg.training_args.do_train:
-            print("11111111111111111111111111111111")
             trainer.train()
         if cfg.training_args.do_eval:
             # logger.info(trainer.trainer.evaluate(eval_dataset=trainer.trainer.train_dataset, metric_key_prefix="train"))
