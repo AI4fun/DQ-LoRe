@@ -12,7 +12,7 @@ You can install them in a new environment with
 conda create -n icl python=3.7
 conda activate icl
 
-git clone https://github.com/UGUESS-lzx/DQ-LoRe.git
+git clone https://github.com/AI4fun/DQ-LoRe.git
 
 # The following line to be replaced depending on your cuda version.
 pip install torch==1.10.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html
