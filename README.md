@@ -1,5 +1,5 @@
 # DQ-LoRe
-Open Source Code for 'DQ-LoRe: Dual Queries with Low Rank Approximation Re-ranking for In-Context Learning' Submitted to ICLR 2024
+Open Source Code for 'DQ-LoRe: Dual Queries with Low Rank Approximation Re-ranking for In-Context Learning' Accepted by ICLR 2024 (Poster)
 ![image](https://github.com/UGUESS-lzx/DQ-LoRe/assets/63826387/2e033083-1098-440a-b2a4-02e05e20a442)
 
 The code framework has been modified based on [CEIL](https://github.com/HKUNLP/icl-ceil) , and we are very grateful for their previous work.
