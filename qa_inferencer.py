@@ -508,6 +508,45 @@ def long_knn(entry, num_candidates=1, num_ice=1):
 
     return entry
 
+
+def gaussian_kernel(x, y, sigma=0.5):
+    return np.exp(-np.linalg.norm(x - y)**2 / (2 * sigma**2))
+
+def kernel(entry, index_reader, model, device, num_candidates=1, num_ice=1):
+    
+    embed = np.expand_dims(entry['embed'], axis=0)
+    near_ids = index_global.search(embed, 16)[1][0].tolist()
+    near_ids = near_ids[1:] if is_train_global else near_ids
+
+    entry_embed = torch.tensor(entry['embed']).to(device)
+    kernel_embed_list = [entry_embed.cpu().detach().numpy()]
+
+    for ids in range(0, len(near_ids), 2):
+        input_id1 = extend_array_with_zeros(index_reader[near_ids[ids]]['input_ids'], 512)
+        attention_mask1 = extend_array_with_zeros(index_reader[near_ids[ids]]['attention_mask'], 512)
+        input_id2 = extend_array_with_zeros(index_reader[near_ids[ids + 1]]['input_ids'], 512)
+        attention_mask2 = extend_array_with_zeros(index_reader[near_ids[ids + 1]]['attention_mask'], 512)
+
+        input_ids = torch.tensor([input_id1, input_id2]).to(device)
+        attention_mask = torch.tensor([attention_mask1, attention_mask2]).to(device)
+        new_embed = model.encode(**{'input_ids':input_ids, 'attention_mask':attention_mask}, encode_ctx=True)
+        new_embed = new_embed.to(device)
+        for n in new_embed:
+            kernel_embed_list.append(n.cpu().detach().numpy())
+
+    value = [float('inf')]    
+    for i in range(1,len(near_ids)):
+        value.append(gaussian_kernel(kernel_embed_list[0], kernel_embed_list[i]))
+
+    sorted_indices = sorted(range(len(value)), key=lambda k: value[k])
+    kernel_ids = []
+    for i in range(len(near_ids)):
+        kernel_ids.append(sorted_indices[i])
+    entry = entry['entry']
+    entry['ctxs'] = near_ids[:num_ice]
+    entry['ctxs_candidates'] = [[i] for i in kernel_ids[:num_candidates]]
+    return entry
+
 @hydra.main(config_path="configs", config_name="iid_qa_inferencer")
 def main(cfg):
     logger.info(cfg)
