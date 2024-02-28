@@ -14,5 +14,4 @@ def model_to_tokenizer(model_name):
 def get_tokenizer(model_name):
     if model_name == 'bm25':
         return model_name
-    #return AutoTokenizer.from_pretrained(model_to_tokenizer(model_name))
-    return AutoTokenizer.from_pretrained("/home/lizx/bert-base-uncased")
+    return AutoTokenizer.from_pretrained(model_to_tokenizer(model_name))
