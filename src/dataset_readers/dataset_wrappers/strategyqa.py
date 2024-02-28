@@ -61,6 +61,6 @@ class DatasetWrapper(ABC):
     ice_separator = "\n"
     question_field = "question"
     answer_field = "answer"
-    hf_dataset = "/home/xiongj/icl/strategyqa/index_data/strategyqa/strategyqa"
+    hf_dataset = "DQ-LoRe/strategyqa/index_data/strategyqa/strategyqa" 
     #hf_dataset_name = "main"
     field_getter = field_getter
