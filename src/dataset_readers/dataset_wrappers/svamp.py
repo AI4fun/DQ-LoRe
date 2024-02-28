@@ -6,13 +6,13 @@ field_getter = App()
 
 def add_numbering(text):
     text = re.sub(r'\n{2,}', r'\n', text)
-    sentences = text.split('\n')  # ʹ�û��з��ָ����
+    sentences = text.split('\n')  
     numbered_text = ''
 
     sentences = sentences[1:]
 
     for i, sentence in enumerate(sentences, 1):
-        numbered_text += f'{i}. {sentence}\n'  # ��ÿ������ǰ�������
+        numbered_text += f'{i}. {sentence}\n'  
 
     return numbered_text
 
@@ -63,6 +63,6 @@ class DatasetWrapper(ABC):
     ice_separator = "\n"
     question_field = "question"
     answer_field = "answer"
-    hf_dataset = "ChilleD/SVAMP"
+    hf_dataset = "ChilleD/SVAMP"  # You can also use the dataset downloaded in the file "index_data"
     hf_dataset_name = "main"
     field_getter = field_getter
