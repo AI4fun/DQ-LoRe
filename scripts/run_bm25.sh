@@ -6,7 +6,7 @@ method=bm25
 port=2041
 
 model_config=hf-gen_a
-model_name=EleutherAI/gpt-neo-2.7B
+model_name=text-davinci-003
 n_tokens=1600
 inf_batch_size=8
 gpu=2
