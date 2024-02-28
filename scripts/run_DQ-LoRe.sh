@@ -27,7 +27,7 @@ for task_name in gsm8k
 do
   export WANDB_TAGS="${method},${task_name},${model_name}"
   run_dir=output/${method}/${task_name}/${model_name}
-  index_data=index_data/${task_name}/index_dataset.json
+  index_data=index_data/${task_name}/index_dataset.json   # If you wish to use a local dataset, please substitute the path here with the one from index_data.
   mkdir -p ${run_dir}
   mkdir -p index_data/${task_name}
 
