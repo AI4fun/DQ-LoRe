@@ -16,7 +16,7 @@ port=5324
 #scr_batch_size=128
 #inf_batch_size=48
 
-model_name=EleutherAI/gpt-neo-2.7B
+model_name=text-davinci-003
 n_tokens=1600
 scr_batch_size=4
 inf_batch_size=4
