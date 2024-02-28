@@ -9,7 +9,7 @@ export HYDRA_FULL_ERROR=1
 export CUDA_VISIBLE_DEVICES="0,1,2,3"
 
 gpu=4
-method=epr
+method=DQ-LoRe
 num_ice=50
 port=5324
 
