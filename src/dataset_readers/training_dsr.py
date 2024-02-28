@@ -17,8 +17,6 @@ def encode_field(example, **kwargs):
     field_getter = kwargs['field_getter']
     tokenizer = kwargs['tokenizer']
     question = field_getter(example)
-    #print(f"training_dsr:  question:{question}")
-    #assert 1==0
     question_ids = tokenizer.encode(question, truncation=True)
     return {
         "question_ids": question_ids,
@@ -29,15 +27,12 @@ def encode_field(example, **kwargs):
 class TrainingDatasetReader(torch.utils.data.Dataset):
 
     def __init__(self, task_name, model_name, field, dataset_path, ds_size=None):
-        self.tokenizer = AutoTokenizer.from_pretrained("/home/xiongj/bert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("/home/lizx/bert-base-uncased")
         dataset_wrapper = get_dataset_wrapper(task_name, dataset_path=dataset_path, ds_size=ds_size)
         self.encoded_dataset = self.encode_field(dataset_wrapper, field)
 
     def encode_field(self, dataset_wrapper, field):
         remove_columns = [col for col in dataset_wrapper.dataset.column_names]
-        print("ttttttttttttttttttttttt")
-        print(dataset_wrapper.dataset)
-        print(remove_columns)
         encoded_dataset = dataset_wrapper.dataset.map(
             encode_field,
             load_from_cache_file=False,
