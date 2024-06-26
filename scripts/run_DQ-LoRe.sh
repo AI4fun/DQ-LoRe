@@ -73,6 +73,16 @@ do
 
 
   retrieve_file=${run_dir}/qa_train_retrieved.json
+  python dense_retriever.py \
+      hydra.run.dir=${run_dir}/dense_retriever \
+      output_file=${retrieve_file} \
+      num_ice=${num_ice} \
+      task_name=${task_name} \
+      index_reader.dataset_path=${index_data} \
+      pretrained_model_path=${run_dir} \
+      faiss_index=${run_dir}/index
+
+
   pred_file=${run_dir}/pred.json
   accelerate launch --num_processes ${gpu} --main_process_port ${port}  qa_inferencer.py \
       hydra.run.dir=${run_dir}/inferencer \
